@@ -9,7 +9,6 @@ import unittest
 
 from presence_analyzer import main, views, utils
 
-
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
 )
@@ -53,6 +52,58 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(len(data), 2)
         self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
 
+    def test_mean_time_weekday_view(self):
+        """
+        Test correctness of presenting data of mean presence
+        time of given user grouped by weekday.
+        """
+        resp = self.client.get('/api/v1/mean_time_weekday/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertEqual(len(data), 7)
+
+        expected_res = [
+            ["Mon", 0],
+            ["Tue", 30047.0],
+            ["Wed", 24465.0],
+            ["Thu", 23705.0],
+            ["Fri", 0],
+            ["Sat", 0],
+            ["Sun", 0],
+        ]
+        self.assertEqual(expected_res, data)
+
+        resp = self.client.get('/api/v1/mean_time_weekday/1000')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_presence_weekday_view(self):
+        """
+        Test correctness of presenting data of presence by weekday.
+        """
+        resp = self.client.get('/api/v1/presence_weekday/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertEqual(len(data), 8)
+
+        expected_res = [
+            ["Weekday", "Presence (s)"],
+            ["Mon", 0],
+            ["Tue", 30047],
+            ["Wed", 24465],
+            ["Thu", 23705],
+            ["Fri", 0],
+            ["Sat", 0],
+            ["Sun", 0],
+        ]
+        self.assertEqual(expected_res, data)
+
+        resp = self.client.get('/api/v1/presence_weekday/1000')
+        self.assertEqual(resp.status_code, 404)
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -85,6 +136,75 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
             data[10][sample_date]['start'],
             datetime.time(9, 39, 5)
         )
+
+    def test_jsonify(self):
+        """
+        Test if function create a response result in JSON representation.
+        """
+        @utils.jsonify
+        def return_dict():
+            return {1: 1, 2: 2}
+        res = return_dict()
+        self.assertEqual({u'1': 1, u'2': 2}, json.loads(res.data))
+
+    def test_group_by_weekday(self):
+        """
+        Test if function groups presence entries by weekday.
+        """
+        example_date = {
+            datetime.date(2013, 9, 10): {
+                'start': datetime.time(9, 39, 5),
+                'end': datetime.time(17, 59, 52),
+            },
+            datetime.date(2013, 9, 12): {
+                'start': datetime.time(10, 48, 46),
+                'end': datetime.time(17, 23, 51),
+            },
+            datetime.date(2013, 9, 11): {
+                'start': datetime.time(9, 19, 52),
+                'end': datetime.time(16, 7, 37),
+            },
+        }
+        tested_res = utils.group_by_weekday(example_date)
+        self.assertListEqual(
+            [
+                [],
+                [30047],
+                [24465],
+                [23705],
+                [],
+                [],
+                [],
+            ],
+            tested_res,
+        )
+
+    def test_seconds_since_midnight(self):
+        """
+        Test if function correctly calculate amount
+        of seconds since midnight.
+        """
+        res = utils.seconds_since_midnight(datetime.time(22, 33, 11))
+        self.assertEqual(81191, res)
+
+    def test_interval(self):
+        """
+        Test if interval between two datetime.time objects is correct.
+        """
+        tested_interval = utils.interval(
+            datetime.time(11, 22, 33),
+            datetime.time(8, 11, 31)
+        )
+        self.assertEqual(-11462, tested_interval)
+
+    def test_mean(self):
+        """
+        Test if arythmetic mean returned by funcion is correct.
+        """
+        self.assertEqual(0, utils.mean([]))
+        self.assertEqual(2., utils.mean([1, 2, 3]))
+        self.assertEqual(-2., utils.mean([-1, -2, -3]))
+        self.assertEqual(2., utils.mean([1., 2., 3.]))
 
 
 def suite():
