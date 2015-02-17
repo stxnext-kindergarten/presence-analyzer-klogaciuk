@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 # -*- coding: utf-8 -*-
 """
 Presence analyzer unit tests.
@@ -50,7 +51,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
         self.assertEqual(len(data), 2)
-        self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
+        self.assertDictEqual(data[0], {'user_id': 10, 'name': 'User 10'})
 
     def test_mean_time_weekday_view(self):
         """
@@ -104,6 +105,52 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         resp = self.client.get('/api/v1/presence_weekday/1000')
         self.assertEqual(resp.status_code, 404)
 
+    def test_presence_start_end(self):
+        """
+        Test if function has returned correct values of user average
+        working start time and user average working end time and.
+        """
+        resp = self.client.get('/api/v1/presence_start_end/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertDictEqual(
+            {
+                '0': {
+                    'start': [0, 0, 0],
+                    'end': [0, 0, 0],
+                },
+                '1': {
+                    'start': [9, 39, 5],
+                    'end': [17, 59, 52],
+                },
+                '2': {
+                    'start': [9, 19, 52],
+                    'end': [16, 7, 37],
+                },
+                '3': {
+                    'start': [10, 48, 46],
+                    'end': [17, 23, 51],
+                },
+                '4': {
+                    'start': [0, 0, 0],
+                    'end': [0, 0, 0],
+                },
+                '5': {
+                    'end': [0, 0, 0],
+                    'start': [0, 0, 0],
+                },
+                '6': {
+                    'end': [0, 0, 0],
+                    'start': [0, 0, 0],
+                },
+            },
+            data,
+        )
+        resp = self.client.get('/api/v1/presence_start_end/1000')
+        self.assertEqual(resp.status_code, 404)
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -145,7 +192,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         def return_dict():
             return {1: 1, 2: 2}
         res = return_dict()
-        self.assertEqual({u'1': 1, u'2': 2}, json.loads(res.data))
+        self.assertEqual({'1': 1, '2': 2}, json.loads(res.data))
 
     def test_group_by_weekday(self):
         """
