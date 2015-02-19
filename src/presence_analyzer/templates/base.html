@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <title>Presence analyzer</title>
+    <meta name="keywords" content="" />
+    <meta name="description" content=""/>
+    <meta name="author" content="STX Next sp. z o.o."/>
+    <meta name="viewport" content="width=device-width; initial-scale=1.0">
+
+    <link href="{{ url_for('static', filename='/css/normalize.css') }}" media="all" rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='/css/base.css') }}" media="all" rel="stylesheet" type="text/css" />
+
+    <script src="{{ url_for('static', filename='/js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+    <script type="text/javascript">
+        {% block js %}
+            {% block specific_required_js_load %}{% endblock %}
+            (function($) {
+                $(document).ready(function() {
+                    prepare_user_select();
+                    $('#user_id').change(function() {
+                        var selected_user = $("#user_id").val(), chart_div = $('#chart_div');
+                        if(selected_user) {
+                            loading.show();
+                            chart_div.hide();
+                            {% block user_onchange %}{% endblock %}
+                        }
+                    });
+                });
+            })(jQuery);
+        {% endblock %}
+    </script>
+</head>
+
+<body>
+    <div id="main">
+        <div id="header">
+            <ul>
+                {% for url in urls.keys() %}
+                    <li {% if active==url %}id="selected"{% endif %}>
+                        <a href="{{ url_for('render_html', template=url) }}">{{ urls[url] }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div id="content">
+            <h2>{% block title %}{% endblock %}</h2>
+            <p>
+                <select id="user_id" style="display: none">
+                    <option value="">--</option>
+                </select>
+                <div id="chart_div" style="display: none">
+                </div>
+                <div id="loading">
+                    <img src="{{ url_for('static', filename='/img/loading.gif') }}" />
+                </div>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

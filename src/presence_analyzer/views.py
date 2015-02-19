@@ -4,7 +4,7 @@ Defines views.
 """
 
 import calendar
-from flask import redirect, abort
+from flask import redirect, abort, render_template
 import time
 
 from presence_analyzer.main import app
@@ -16,6 +16,9 @@ from presence_analyzer.utils import(
     seconds_since_midnight
 )
 
+from jinja2 import TemplateNotFound
+from jinja2.exceptions import TemplateSyntaxError
+
 import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -25,7 +28,7 @@ def mainpage():
     """
     Redirects to front page.
     """
-    return redirect('/static/presence_weekday.html')
+    return redirect('/presence_weekday')
 
 
 @app.route('/api/v1/users', methods=['GET'])
@@ -118,3 +121,18 @@ def presence_start_end(user_id):
         ]
 
     return weekdays
+
+
+@app.route('/<template>')
+def render_html(template):
+    urls = {
+        'presence_weekday': 'Presence weekday',
+        'mean_time_weekday': 'Mean time weekday',
+        'presence_start_end': 'Presence start end',
+        }
+    try:
+        return render_template(template + '.html', urls=urls)
+    except TemplateSyntaxError:
+        abort(404)
+    except TemplateNotFound:
+        abort(404)
