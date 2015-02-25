@@ -1,14 +1,15 @@
-from __future__ import unicode_literals
 # -*- coding: utf-8 -*-
 """
 Presence analyzer unit tests.
 """
-import os.path
-import json
+from __future__ import unicode_literals
+
 import datetime
+import json
+import os.path
 import unittest
 
-from presence_analyzer import main, views, utils
+from presence_analyzer import main, utils, views
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
@@ -40,7 +41,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 302)
-        assert resp.headers['Location'].endswith('/presence_weekday.html')
+        assert resp.headers['Location'].endswith('/presence_weekday')
 
     def test_api_users(self):
         """
@@ -149,6 +150,24 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             data,
         )
         resp = self.client.get('/api/v1/presence_start_end/1000')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_render_html(self):
+        """
+        Test if function operate template rendering correctly.
+        """
+        resp = self.client.get('/presence_weekday')
+        self.assertNotEqual(
+            resp.data.find('Presence by weekday'),
+            -1,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'text/html; charset=utf-8')
+
+        resp = self.client.get('/presence_weekday_that_not_exists')
+        self.assertEqual(resp.status_code, 404)
+
+        resp = self.client.get('/template_with_errors')
         self.assertEqual(resp.status_code, 404)
 
 

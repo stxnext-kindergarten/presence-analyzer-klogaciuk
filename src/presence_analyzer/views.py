@@ -2,21 +2,24 @@
 """
 Defines views.
 """
+# pylint: disable=no-name-in-module,import-error
 
 import calendar
-from flask import redirect, abort
+import logging
 import time
 
+from flask import abort, redirect
+from flask.ext.mako import exceptions, render_template
+
 from presence_analyzer.main import app
-from presence_analyzer.utils import(
-    jsonify,
+from presence_analyzer.utils import (
     get_data,
-    mean,
     group_by_weekday,
-    seconds_since_midnight
+    jsonify,
+    mean,
+    seconds_since_midnight,
 )
 
-import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -25,7 +28,7 @@ def mainpage():
     """
     Redirects to front page.
     """
-    return redirect('/static/presence_weekday.html')
+    return redirect('/presence_weekday')
 
 
 @app.route('/api/v1/users', methods=['GET'])
@@ -118,3 +121,19 @@ def presence_start_end(user_id):
         ]
 
     return weekdays
+
+
+@app.route('/<template>')
+def render_html(template):
+    """
+    Returns rendered html files.
+    """
+    urls = {
+        'presence_weekday': 'Presence weekday',
+        'mean_time_weekday': 'Mean time weekday',
+        'presence_start_end': 'Presence start end',
+    }
+    try:
+        return render_template(template + '.html', urls=urls)
+    except (exceptions.TopLevelLookupException, exceptions.SyntaxException):
+        abort(404)
