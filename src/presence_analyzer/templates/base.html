@@ -1,3 +1,5 @@
+<% active = request.path[1:] %>
+
 <!doctype html>
 <html lang=en>
 <head>
@@ -8,16 +10,16 @@
     <meta name="author" content="STX Next sp. z o.o."/>
     <meta name="viewport" content="width=device-width; initial-scale=1.0">
 
-    <link href="{{ url_for('static', filename='/css/normalize.css') }}" media="all" rel="stylesheet" type="text/css" />
-    <link href="{{ url_for('static', filename='/css/base.css') }}" media="all" rel="stylesheet" type="text/css" />
+    <link href="${ url_for('static', filename='/css/normalize.css') }" media="all" rel="stylesheet" type="text/css" />
+    <link href="${ url_for('static', filename='/css/base.css') }" media="all" rel="stylesheet" type="text/css" />
 
-    <script src="{{ url_for('static', filename='/js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script src="${ url_for('static', filename='/js/jquery.min.js') }"></script>
+    <script src="${ url_for('static', filename='js/base.js') }"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
     <script type="text/javascript">
-        {% block js %}
-            {% block specific_required_js_load %}{% endblock %}
+        <%block name="js">
+            <%block name="specific_required_js_load"></%block>
             (function($) {
                 $(document).ready(function() {
                     prepare_user_select();
@@ -26,28 +28,35 @@
                         if(selected_user) {
                             loading.show();
                             chart_div.hide();
-                            {% block user_onchange %}{% endblock %}
+                            <%block name="user_onchange"></%block>
                         }
                     });
                 });
             })(jQuery);
-        {% endblock %}
+        </%block>
     </script>
 </head>
-
+ 
 <body>
     <div id="main">
         <div id="header">
             <ul>
-                {% for url in urls.keys() %}
-                    <li {% if active==url %}id="selected"{% endif %}>
-                        <a href="{{ url_for('render_html', template=url) }}">{{ urls[url] }}</a>
-                    </li>
-                {% endfor %}
+                % for url in urls.keys():
+                    ${makerow(url)}
+                % endfor
             </ul>
+            <%def name="makerow(url)">
+                <li 
+                    % if url == active:
+                        id="selected"
+                    % endif
+                >
+                    <a href="${url_for('render_html', template=url)}">${ urls[url] }</a>
+                </li>
+            </%def>
         </div>
         <div id="content">
-            <h2>{% block title %}{% endblock %}</h2>
+            <h2><%block name="title"></%block></h2>
             <p>
                 <select id="user_id" style="display: none">
                     <option value="">--</option>
@@ -55,7 +64,7 @@
                 <div id="chart_div" style="display: none">
                 </div>
                 <div id="loading">
-                    <img src="{{ url_for('static', filename='/img/loading.gif') }}" />
+                    <img src="${url_for('static', filename='/img/loading.gif')}" />
                 </div>
             </p>
         </div>

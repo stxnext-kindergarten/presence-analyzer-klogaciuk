@@ -1,14 +1,15 @@
-from __future__ import unicode_literals
 # -*- coding: utf-8 -*-
 """
 Presence analyzer unit tests.
 """
-import os.path
-import json
+from __future__ import unicode_literals
+
 import datetime
+import json
+import os.path
 import unittest
 
-from presence_analyzer import main, views, utils
+from presence_analyzer import main, utils, views
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'

@@ -1,16 +1,15 @@
-{% extends 'base.html' %}
-{% set active = 'mean_time_weekday' %}
+<%inherit file="base.html"/>
 
-{% block specific_required_js_load %}
+<%block name="specific_required_js_load">
     google.load("visualization", "1", {packages:["corechart"], 'language': 'pl'});
     function parseInterval(value) {
         var result = new Date(1,1,1);
         result.setMilliseconds(value*1000);
         return result;
     }
-{% endblock %}
-{% block user_onchange %}
-    $.getJSON("{{ url_for('mean_time_weekday_view', user_id=0) }}"+selected_user, function(result) {
+</%block>
+<%block name="user_onchange">
+    $.getJSON("${ url_for('mean_time_weekday_view', user_id=0) }"+selected_user, function(result) {
         $.each(result, function(index, value) {
             value[1] = parseInterval(value[1]);
         });
@@ -29,7 +28,5 @@
         var chart = new google.visualization.ColumnChart(chart_div[0]);
         chart.draw(data, options);
     });
-{% endblock %}
-
-{% block selected_link2 %}selected{% endblock %}
-{% block title %}Presence mean time by weekday{% endblock %}
+</%block>
+<%block name="title">Presence mean time by weekday</%block>

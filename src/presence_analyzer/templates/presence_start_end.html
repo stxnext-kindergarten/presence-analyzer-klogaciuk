@@ -1,9 +1,8 @@
-{% extends 'base.html' %}
-{% set active = 'presence_start_end' %}
+<%inherit file="base.html"/>
 
-{% block specific_required_js_load %}google.load("visualization", "1", {packages:["corechart", "timeline"], 'language': 'pl'});{% endblock %}
-{% block user_onchange %}
-    $.getJSON("{{ url_for('presence_start_end', user_id=0) }}"+selected_user, function(res) {
+<%block name="specific_required_js_load">google.load("visualization", "1", {packages:["corechart", "timeline"], 'language': 'pl'});</%block>
+<%block name="user_onchange">
+    $.getJSON("${ url_for('presence_start_end', user_id=0) }"+selected_user, function(res) {
         var result = [], days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
         $.each(res, function(index, value) {
             result.push([]);
@@ -31,7 +30,5 @@
         var chart = new google.visualization.Timeline(chart_div[0]);
         chart.draw(data, options);
     });
-{% endblock %}
-
-{% block selected_link3 %}selected{% endblock %}
-{% block title %}Presence start-end weekday{% endblock %}
+</%block>
+<%block name="title">Presence start-end weekday</%block>

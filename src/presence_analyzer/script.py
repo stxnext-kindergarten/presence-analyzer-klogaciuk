@@ -6,8 +6,8 @@ import os
 import sys
 from functools import partial
 
-import paste.script.command
 import werkzeug.script
+import paste.script.command
 
 etc = partial(os.path.join, 'parts', 'etc')
 
