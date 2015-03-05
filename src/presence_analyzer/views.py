@@ -10,6 +10,7 @@ import time
 
 from flask import abort, redirect
 from flask.ext.mako import exceptions, render_template
+from lxml import etree
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
@@ -33,7 +34,7 @@ def mainpage():
 
 @app.route('/api/v1/users', methods=['GET'])
 @jsonify
-def users_view():
+def users_view_v1():
     """
     Users listing for dropdown.
     """
@@ -41,6 +42,29 @@ def users_view():
     return [
         {'user_id': i, 'name': 'User {0}'.format(str(i))}
         for i in data.keys()
+    ]
+
+
+@app.route('/api/v2/users', methods=['GET'])
+@jsonify
+def users_view_v2():
+    """
+    Users listing for dropdown.
+    """
+    # pylint: disable=no-member
+    with open(app.config['USERS_XML_FILE'], 'r') as usersxmlfile:
+        tree = etree.parse(usersxmlfile)
+    url_base = "{}://{}".format(
+        tree.find('server').findtext('protocol'),
+        tree.find('server').findtext('host'),
+    )
+    return [
+        {
+            'user_id': elem.get('id'),
+            'name': elem.findtext('name'),
+            'avatar': '{}{}'.format(url_base, elem.findtext('avatar')),
+        }
+        for elem in tree.findall('./users/user')
     ]
 
 
@@ -53,7 +77,7 @@ def mean_time_weekday_view(user_id):
     data = get_data()
     if user_id not in data:
         log.debug('User %s not found!', user_id)
-        abort(404)
+        return 'NO_USER_DATA'
 
     weekdays = group_by_weekday(data[user_id])
     result = [
@@ -73,7 +97,7 @@ def presence_weekday_view(user_id):
     data = get_data()
     if user_id not in data:
         log.debug('User %s not found!', user_id)
-        abort(404)
+        return 'NO_USER_DATA'
 
     weekdays = group_by_weekday(data[user_id])
     result = [
@@ -94,7 +118,7 @@ def presence_start_end(user_id):
     data = get_data()
     if user_id not in data:
         log.debug('User %s not found!', user_id)
-        abort(404)
+        return 'NO_USER_DATA'
 
     weekdays = {x: {'start': [], 'end': []} for x in range(7)}
 

@@ -58,3 +58,12 @@ body {
     color: black;
     font-weight: bold;
 }
+
+#user_img {
+    display: none;
+    margin: 10px;
+}
+
+#no_data_div {
+    display: none;
+}
