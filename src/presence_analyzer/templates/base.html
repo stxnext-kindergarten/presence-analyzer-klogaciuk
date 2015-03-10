@@ -24,11 +24,23 @@
                 $(document).ready(function() {
                     prepare_user_select();
                     $('#user_id').change(function() {
-                        var selected_user = $("#user_id").val(), chart_div = $('#chart_div');
+                        var selected_user = $("#user_id").val(),
+                            chart_div = $('#chart_div'),
+                            user_img = $('#user_img'),
+                            no_data_div = $('#no_data_div'),
+                            avatar = $('option:selected', this).attr('avatar');
+                        user_img.hide();
+                        user_img.error(function() {
+                            user_img.hide();
+                        });
+                        no_data_div.hide();
                         if(selected_user) {
                             loading.show();
                             chart_div.hide();
+                            avatar && (user_img.attr('src', avatar)) && user_img.css('display', 'block');
                             <%block name="user_onchange"></%block>
+                        } else {
+                            chart_div.html('').hide();
                         }
                     });
                 });
@@ -36,7 +48,7 @@
         </%block>
     </script>
 </head>
- 
+
 <body>
     <div id="main">
         <div id="header">
@@ -46,7 +58,7 @@
                 % endfor
             </ul>
             <%def name="makerow(url)">
-                <li 
+                <li
                     % if url == active:
                         id="selected"
                     % endif
@@ -61,6 +73,8 @@
                 <select id="user_id" style="display: none">
                     <option value="">--</option>
                 </select>
+                <img id="user_img" src="">
+                <div id="no_data_div">No data about the user.</div>
                 <div id="chart_div" style="display: none">
                 </div>
                 <div id="loading">

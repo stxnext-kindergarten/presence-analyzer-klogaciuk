@@ -3,11 +3,15 @@
 <%block name="specific_required_js_load">google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});</%block>
 <%block name="user_onchange">
     $.getJSON("${ url_for('presence_weekday_view', user_id=0) }"+selected_user, function(result) {
-        var data = google.visualization.arrayToDataTable(result), options = {};
-        chart_div.show();
+        if (result === "NO_USER_DATA") {
+            no_data_div.show();
+        } else {
+            var data = google.visualization.arrayToDataTable(result), options = {},
+                chart = new google.visualization.PieChart(chart_div[0]);
+            chart_div.show();
+            chart.draw(data, options);
+        }
         loading.hide();
-        var chart = new google.visualization.PieChart(chart_div[0]);
-        chart.draw(data, options);
     });
 </%block>
 <%block name="title">Presence by weekday</%block>

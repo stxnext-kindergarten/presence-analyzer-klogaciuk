@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<intranet>
+    <server>
+        <host>intranet.stxnext.pl</host>
+        <port>443</port>
+        <protocol>https</protocol>
+    </server>
+    <users>
+        <user id="26">
+            <avatar>/api/images/users/26</avatar>
+            <name>Andrzej S.</name>
+        </user>
+        <user id="165">
+            <avatar>/api/images/users/165</avatar>
+            <name>Anna D.</name>
+        </user>
+    </users>
+</intranet>

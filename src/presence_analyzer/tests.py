@@ -9,10 +9,13 @@ import json
 import os.path
 import unittest
 
-from presence_analyzer import main, utils, views
+from presence_analyzer import main, utils
 
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
+)
+USERS_TEST_XML_FILE = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'users_test.xml'
 )
 
 
@@ -26,7 +29,12 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         Before each test, set up a environment.
         """
-        main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update(
+            {
+                'DATA_CSV': TEST_DATA_CSV,
+                'USERS_XML_FILE': USERS_TEST_XML_FILE,
+            }
+        )
         self.client = main.app.test_client()
 
     def tearDown(self):
@@ -43,7 +51,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         assert resp.headers['Location'].endswith('/presence_weekday')
 
-    def test_api_users(self):
+    def test_api_users_v1(self):
         """
         Test users listing.
         """
@@ -53,6 +61,31 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(len(data), 2)
         self.assertDictEqual(data[0], {'user_id': 10, 'name': 'User 10'})
+
+    def test_api_users_v2(self):
+        """
+        Test users listing.
+        """
+        resp = self.client.get('/api/v2/users')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+
+        data = json.loads(resp.data)
+        self.assertEqual(len(data), 2)
+
+        expected_data = [
+            {
+                'user_id': '26',
+                'name': 'Andrzej S.',
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/26',
+            },
+            {
+                'user_id': '165',
+                'name': 'Anna D.',
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/165',
+            },
+        ]
+        self.assertListEqual(json.loads(resp.data), expected_data)
 
     def test_mean_time_weekday_view(self):
         """
