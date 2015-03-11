@@ -36,6 +36,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             }
         )
         self.client = main.app.test_client()
+        utils.TIMESTAMPS['get_data'] = 0
 
     def tearDown(self):
         """
@@ -111,7 +112,8 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(expected_res, data)
 
         resp = self.client.get('/api/v1/mean_time_weekday/1000')
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data), "NO_USER_DATA")
 
     def test_presence_weekday_view(self):
         """
@@ -137,7 +139,8 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(expected_res, data)
 
         resp = self.client.get('/api/v1/presence_weekday/1000')
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.data), "NO_USER_DATA")
 
     def test_presence_start_end(self):
         """
@@ -183,7 +186,8 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             data,
         )
         resp = self.client.get('/api/v1/presence_start_end/1000')
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(json.loads(resp.data), 'NO_USER_DATA')
+        self.assertEqual(resp.status_code, 200)
 
     def test_render_html(self):
         """
@@ -214,6 +218,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         Before each test, set up a environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        utils.TIMESTAMPS['get_data'] = 0
 
     def tearDown(self):
         """
@@ -242,6 +247,9 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         @utils.jsonify
         def return_dict():
+            """
+            Simple function returning dictionary for further tests.
+            """
             return {1: 1, 2: 2}
         res = return_dict()
         self.assertEqual({'1': 1, '2': 2}, json.loads(res.data))
@@ -304,6 +312,30 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertEqual(2., utils.mean([1, 2, 3]))
         self.assertEqual(-2., utils.mean([-1, -2, -3]))
         self.assertEqual(2., utils.mean([1., 2., 3.]))
+
+    def test_memorize(self):
+        """
+        Test caching of get_data method.
+        """
+        expected_data = {
+            datetime.date(2013, 9, 10): {
+                'start': datetime.time(9, 39, 5),
+                'end': datetime.time(17, 59, 52),
+            },
+            datetime.date(2013, 9, 12): {
+                'start': datetime.time(10, 48, 46),
+                'end': datetime.time(17, 23, 51),
+            },
+            datetime.date(2013, 9, 11): {
+                'start': datetime.time(9, 19, 52),
+                'end': datetime.time(16, 7, 37),
+            },
+        }
+        self.assertDictEqual(expected_data, utils.get_data()[10])
+        utils.CACHE = {'get_data': {10: 'rubbish'}}
+        self.assertNotEqual(expected_data, utils.get_data()[10])
+        utils.TIMESTAMPS['get_data'] = 0
+        self.assertDictEqual(expected_data, utils.get_data()[10])
 
 
 def suite():
