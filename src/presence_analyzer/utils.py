@@ -5,6 +5,8 @@ Helper functions used in views.
 
 import csv
 import logging
+import time
+import threading
 from datetime import datetime
 from functools import wraps
 from json import dumps
@@ -14,6 +16,10 @@ from flask import Response
 from presence_analyzer.main import app
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+
+CACHE = {}
+TIMESTAMPS = {}
 
 
 def jsonify(function):
@@ -32,6 +38,32 @@ def jsonify(function):
     return inner
 
 
+def memorize(period):
+    """
+    Memorizing decorator. Returning cached data
+    if its validity period is not expired.
+    """
+
+    def _decoration_wrapper(func):
+        lock = threading.Lock()
+
+        def _caching_wrapper(*args, **kwargs):
+            cache_key = func.__name__
+            now = time.time()
+            if TIMESTAMPS.get(cache_key, now) > now:
+                return CACHE[cache_key]
+            with lock:
+                if TIMESTAMPS.get(cache_key, now) > now:
+                    return CACHE[cache_key]
+                ret = func(*args, **kwargs)
+                CACHE[cache_key] = ret
+                TIMESTAMPS[cache_key] = now + period
+                return ret
+        return _caching_wrapper
+    return _decoration_wrapper
+
+
+@memorize(600)
 def get_data():
     """
     Extracts presence data from CSV file and groups it by user_id.
@@ -83,11 +115,11 @@ def group_by_weekday(items):
     return result
 
 
-def seconds_since_midnight(time):
+def seconds_since_midnight(time_base):
     """
     Calculates amount of seconds since midnight.
     """
-    return time.hour * 3600 + time.minute * 60 + time.second
+    return time_base.hour * 3600 + time_base.minute * 60 + time_base.second
 
 
 def interval(start, end):
