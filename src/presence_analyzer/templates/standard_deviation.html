@@ -1,0 +1,63 @@
+<%inherit file="base.html"/>
+
+<%block name="specific_required_js_load">google.load("visualization", "1.1", {packages:["corechart", "timeline"], 'language': 'pl'});</%block>
+<%block name="user_onchange">
+    $.getJSON("${ url_for('standard_deviation', user_id=0) }"+selected_user, function(res) {
+    if (res === 'NO_USER_DATA') {
+        no_data_div.show();
+    } else {
+        var drawChart = function(rows) {
+            var container = document.getElementById('chart_div'),
+                chart = new google.visualization.Timeline(container),
+                dataTable = new google.visualization.DataTable(),
+                options = {
+                    timeline: {colorByRowLabel: true}
+                };
+
+                dataTable.addColumn({type: 'string', id: 'Day'});
+                dataTable.addColumn({type: 'string', id: 'Name'});
+                dataTable.addColumn({type: 'date', id: 'Start'});
+                dataTable.addColumn({type: 'date', id: 'End'});
+                dataTable.addRows(rows);
+            chart.draw(dataTable, options);
+        }
+        var get_day_number = function(base) {
+            var first_date = new Date(0,0,0, base[0][0], base[0][1], base[0][2]),
+                second_date = new Date( 0, 0, 0, base[1][0], base[1][1], base[1][2]);
+            return first_date > second_date ? 1 : 0;
+        }
+
+        var days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        $.each(res, function(index, value) {
+            var rows = [];
+
+            for (day=0; day<days.length; day++) {
+                var start_base = res[day]['start_variation'],
+                    end_base = res[day]['end_variation'],
+                    additional_day_shift = get_day_number(start_base);
+                rows.push(
+                    [
+                        days[day],
+                        'Work start',
+                        new Date(0, 0, 0, start_base[0][0], start_base[0][1], start_base[0][2]),
+                        new Date(0, 0, additional_day_shift, start_base[1][0], start_base[1][1], start_base[1][2])
+                    ]
+                );
+                rows.push(
+                    [
+                        days[day],
+                        'Work end',
+                        new Date(0, 0, additional_day_shift, end_base[0][0], end_base[0][1], end_base[0][2]),
+                        new Date(0, 0, additional_day_shift + get_day_number(end_base), end_base[1][0], end_base[1][1], end_base[1][2])
+                    ]
+                );
+            }
+
+            drawChart(rows);
+            chart_div.show();
+        });
+    }
+    loading.hide();
+});
+</%block>
+<%block name="title">Standard deviation of start and end work time</%block>
