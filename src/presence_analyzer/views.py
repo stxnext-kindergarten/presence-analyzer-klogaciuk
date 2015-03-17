@@ -7,6 +7,7 @@ Defines views.
 import calendar
 import logging
 import time
+from collections import defaultdict, OrderedDict
 
 from flask import abort, redirect
 from flask.ext.mako import exceptions, render_template
@@ -19,6 +20,9 @@ from presence_analyzer.utils import (
     jsonify,
     mean,
     seconds_since_midnight,
+    get_mean_start_end,
+    variation_for_day_start_end,
+    standard_deviation_from_data,
 )
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -109,6 +113,67 @@ def presence_weekday_view(user_id):
     return result
 
 
+@app.route('/api/v1/standard_deviation/<int:user_id>', methods=['GET'])
+@jsonify
+def standard_deviation(user_id):
+    """
+    Returns standard deviation of user start and end work time
+    of each working day.
+
+    It creates structure like this:
+    day_start_end is structure like so:
+        {
+            0: {    # 0 mean monday and so on
+                    variation_of_starting_work_time: [
+                        [
+                            starting_floor_hour,
+                            starting_floor_minutes,
+                            starting_floor_seconds
+                        ],
+                        [
+                            starting_top_hour,
+                            starting_top_minutes,
+                            starting_top_seconds,
+                        ],
+                    ],
+                    variation_of_ending_work_time: [
+                        [
+                            ending_floor_hour,
+                            ending_floor_minutes,
+                            ending_floor_seconds
+                        ],
+                        [
+                            ending_top_hour,
+                            ending_top_minutes,
+                            ending_top_seconds,
+                        ],
+                    ],
+                ],
+            },
+        }
+    """
+    data = get_data()
+    if user_id not in data:
+        log.debug('User %s not found!', user_id)
+        return 'NO_USER_DATA'
+
+    day_start_end = {}
+    for day_idx in range(7):
+        day_start_end[day_idx] = defaultdict(lambda: 0)
+
+    weekdays = get_mean_start_end(data[user_id])
+
+    day_start_end = variation_for_day_start_end(
+        day_start_end,
+        data[user_id],
+        weekdays,
+    )
+
+    day_start_end = standard_deviation_from_data(day_start_end, weekdays)
+
+    return day_start_end
+
+
 @app.route('/api/v1/presence_start_end/<int:user_id>', methods=['GET'])
 @jsonify
 def presence_start_end(user_id):
@@ -152,11 +217,12 @@ def render_html(template):
     """
     Returns rendered html files.
     """
-    urls = {
-        'presence_weekday': 'Presence weekday',
-        'mean_time_weekday': 'Mean time weekday',
-        'presence_start_end': 'Presence start end',
-    }
+    urls = OrderedDict([
+        ('presence_weekday', 'Presence weekday'),
+        ('mean_time_weekday', 'Mean time weekday'),
+        ('presence_start_end', 'Presence start end'),
+        ('standard_deviation', 'Standard deviation'),
+    ])
     try:
         return render_template(template + '.html', urls=urls)
     except (exceptions.TopLevelLookupException, exceptions.SyntaxException):

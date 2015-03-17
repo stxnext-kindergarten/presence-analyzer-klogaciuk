@@ -10,6 +10,7 @@ import threading
 from datetime import datetime
 from functools import wraps
 from json import dumps
+from math import sqrt
 
 from flask import Response
 
@@ -134,3 +135,102 @@ def mean(items):
     Calculates arithmetic mean. Returns zero for empty lists.
     """
     return float(sum(items)) / len(items) if len(items) > 0 else 0
+
+
+def get_mean_start_end(user_data):
+    """
+    Calculates mean start and end work time of user
+    for each day of week.
+    """
+    weekdays = {x: {'start': [], 'end': []} for x in range(7)}
+    for day in user_data:
+        # append time of starting work this day for mean time calculations
+        weekdays[day.weekday()]['start'].append(
+            seconds_since_midnight(user_data[day]['start'])
+        )
+        weekdays[day.weekday()]['end'].append(
+            seconds_since_midnight(user_data[day]['end'])
+        )
+    for day_idx in weekdays:
+        weekdays[day_idx]['data_examples_num'] = len(
+            weekdays[day_idx]['start']
+        )
+        weekdays[day_idx]['start'] = mean(weekdays[day_idx]['start'])
+        weekdays[day_idx]['end'] = mean(weekdays[day_idx]['end'])
+    return weekdays
+
+
+def equation_for_day(accurate_time, mean_time, examples_num):
+    """
+    Calculate part of variance equation related to start
+    and end working time of each day.
+    """
+    return (
+        (seconds_since_midnight(accurate_time) - mean_time) ** 2
+    ) / examples_num
+
+
+def variation_for_day_start_end(day_start_end, user_data, weekdays):
+    """
+    Calculate variation of start end end work time
+    for each working day of user.
+    """
+    for day in user_data:
+        day_index = day.weekday()
+        day_start_end[day_index]['start_variation'] += equation_for_day(
+            user_data[day]['start'],
+            weekdays[day_index]['start'],
+            weekdays[day_index]['data_examples_num'],
+        )
+        day_start_end[day_index]['end_variation'] += equation_for_day(
+            user_data[day]['end'],
+            weekdays[day_index]['end'],
+            weekdays[day_index]['data_examples_num'],
+        )
+    return day_start_end
+
+
+def standard_deviation_from_data(day_start_end, weekdays):
+    """
+    Calculate standard deviation from variation from variation.
+    """
+    for day in day_start_end:
+        sigma_start_time_bottom = time.gmtime(
+            weekdays[day]['start'] - sqrt(
+                day_start_end[day]['start_variation'],
+            )
+        )
+        sigma_start_time_top = time.gmtime(weekdays[day]['start'] + sqrt(
+            day_start_end[day]['start_variation'],
+        ))
+        sigma_end_time_bottom = time.gmtime(weekdays[day]['end'] - sqrt(
+            day_start_end[day]['end_variation'],
+        ))
+        sigma_end_time_top = time.gmtime(weekdays[day]['end'] + sqrt(
+            day_start_end[day]['end_variation'],
+        ))
+        day_start_end[day]['start_variation'] = [
+            [
+                sigma_start_time_bottom.tm_hour,
+                sigma_start_time_bottom.tm_min,
+                sigma_start_time_bottom.tm_sec,
+            ],
+            [
+                sigma_start_time_top.tm_hour,
+                sigma_start_time_top.tm_min,
+                sigma_start_time_top.tm_sec,
+            ],
+        ]
+        day_start_end[day]['end_variation'] = [
+            [
+                sigma_end_time_bottom.tm_hour,
+                sigma_end_time_bottom.tm_min,
+                sigma_end_time_bottom.tm_sec,
+            ],
+            [
+                sigma_end_time_top.tm_hour,
+                sigma_end_time_top.tm_min,
+                sigma_end_time_top.tm_sec,
+            ],
+        ]
+    return day_start_end

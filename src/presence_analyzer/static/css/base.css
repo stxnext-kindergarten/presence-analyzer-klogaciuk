@@ -31,6 +31,7 @@ body {
     border: 1px solid #bbb;
     border-bottom-width: 0;
     margin: 0;
+    width: 24.75%;
 }
 
 #header a {
@@ -41,6 +42,7 @@ body {
     color: #00c;
     width: 12em;
     text-align: center;
+    width: 84%;
 }
 
 #header a:hover {

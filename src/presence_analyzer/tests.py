@@ -8,6 +8,7 @@ import datetime
 import json
 import os.path
 import unittest
+from collections import defaultdict
 
 from presence_analyzer import main, utils
 
@@ -189,6 +190,24 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(json.loads(resp.data), 'NO_USER_DATA')
         self.assertEqual(resp.status_code, 200)
 
+    def test_standard_deviation(self):
+        """
+        Test if function has returned correct standard deviation
+        value of starting and ending work time.
+        """
+        resp = self.client.get('/api/v1/standard_deviation/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        expected_data = {
+            'start_variation': [[9, 39, 5], [9, 39, 5]],
+            'end_variation': [[17, 59, 52], [17, 59, 52]],
+        }
+        self.assertDictEqual(expected_data, json.loads(resp.data)['1'])
+
+        resp = self.client.get('/api/v1/presence_start_end/1000')
+        self.assertEqual(json.loads(resp.data), 'NO_USER_DATA')
+        self.assertEqual(resp.status_code, 200)
+
     def test_render_html(self):
         """
         Test if function operate template rendering correctly.
@@ -219,6 +238,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
         utils.TIMESTAMPS['get_data'] = 0
+        self.client = main.app.test_client()
 
     def tearDown(self):
         """
@@ -336,6 +356,87 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertNotEqual(expected_data, utils.get_data()[10])
         utils.TIMESTAMPS['get_data'] = 0
         self.assertDictEqual(expected_data, utils.get_data()[10])
+
+    def test_mean_start_end_for_sv(self):
+        """
+        Test if function correctly counts mean time of
+        starting and ending work time.
+        """
+        expected_data = {
+            'start': 34745.0,
+            'data_examples_num': 1,
+            'end': 64792.0
+        }
+        self.assertDictEqual(
+            expected_data,
+            utils.get_mean_start_end(
+                utils.get_data()[10]
+            )[1],
+        )
+
+    def test_variation_start_end(self):
+        """
+        Test if function correctly counts variation from
+        given data.
+        """
+        data = utils.get_data()
+        day_start_end = {}
+        for day_idx in range(7):
+            day_start_end[day_idx] = defaultdict(lambda: 0)
+
+        expected_data = {
+            'end_variation': 2247001.0,
+            'start_variation': 2292196.0,
+        }
+        weekdays = utils.get_mean_start_end(
+            data[11]
+        )
+        day_start_end = utils.variation_for_day_start_end(
+            day_start_end,
+            data[11],
+            weekdays,
+        )
+        self.assertDictEqual(day_start_end[3], expected_data)
+
+    def t_standard_deviation_from_data(self):
+        """
+        Test if function retuns standard deviation
+        from given variations.
+        """
+        data = utils.get_data()
+        day_start_end = {}
+        for day_idx in range(7):
+            day_start_end[day_idx] = defaultdict(lambda: 0)
+        weekdays = utils.get_mean_start_end(
+            data[11]
+        )
+        day_start_end = utils.variation_for_day_start_end(
+            day_start_end,
+            data[11],
+            weekdays,
+        )
+        expected_data = {
+            'end_variation': [[15, 51, 27], [16, 41, 25]],
+            'start_variation': [[9, 28, 8], [10, 18, 36]],
+        }
+        self.assertEqual(
+            expected_data,
+            utils.standard_deviation_from_data(
+                day_start_end,
+                weekdays)[3],
+        )
+
+    def test_equation_for_day(self):
+        """
+        Test if function properly counts particural
+        part of variance equation.
+        """
+        self.assertAlmostEqual(
+            22739.259661982247, utils.equation_for_day(
+                datetime.time(8, 54, 29),
+                30553.52475247525, 101
+            )
+        )
 
 
 def suite():
