@@ -3,9 +3,10 @@
 Defines views.
 """
 # pylint: disable=no-name-in-module,import-error
-
 import calendar
+import locale
 import logging
+import operator
 import time
 from collections import defaultdict, OrderedDict
 
@@ -62,7 +63,7 @@ def users_view_v2():
         tree.find('server').findtext('protocol'),
         tree.find('server').findtext('host'),
     )
-    return [
+    data = [
         {
             'user_id': elem.get('id'),
             'name': elem.findtext('name'),
@@ -70,6 +71,9 @@ def users_view_v2():
         }
         for elem in tree.findall('./users/user')
     ]
+    locale.setlocale(locale.LC_COLLATE, "")
+    data.sort(key=operator.itemgetter('name'), cmp=locale.strcoll)
+    return data
 
 
 @app.route('/api/v1/mean_time_weekday/<int:user_id>', methods=['GET'])
